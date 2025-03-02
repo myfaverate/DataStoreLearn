@@ -46,10 +46,12 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import edu.tyut.datastorelearn.datastore.Person
+import edu.tyut.datastorelearn.datastore.person
 import edu.tyut.datastorelearn.utils.userPreferencesStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -213,6 +215,14 @@ private fun Greeting(name: String, modifier: Modifier = Modifier, snackBarHostSt
                             return@launch
                         }
                         context.userPreferencesStore.updateData { person: Person ->
+                            Log.i(TAG, "Greeting -> userName: $userName, man: $isMan, age: $age")
+                            person {
+                                username = userName
+                                man = isMan
+                                this.age = age.toIntOrNull() ?: 0
+                            }.apply {
+                                snackBarHostState.showSnackbar("保存成功Person: $this, name: ${this.username}")
+                            }
                             person.toBuilder().setUsername(userName)
                                 .setAge(age.toIntOrNull() ?: 0)
                                 .setMan(isMan)
@@ -239,10 +249,14 @@ private fun Greeting(name: String, modifier: Modifier = Modifier, snackBarHostSt
                         }
                     coroutineScope.launch {
                         flow.collectLatest { person: Person ->
+                            // person.username 原理就是下面这一行
                             val username: String = String(bytes = person.username.toByteArray(charset = Charsets.UTF_8), charset = Charsets.UTF_8)
-                            Log.i(TAG, "Greeting -> person: $person, username: $username")
+                            Log.i(TAG, "Greeting -> person: $person, username: $username, person.username: ${person.username}")
                             snackBarHostState.showSnackbar("读取成功person: $person")
                         }
+                        // 阻塞时读取
+                        val person: Person? = context.userPreferencesStore.data.firstOrNull()
+                        Log.i(TAG, "Greeting -> person Local: ${person.toString()}, person.username: ${person?.username}")
                     }
                 }
         )
